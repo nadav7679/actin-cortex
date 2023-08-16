@@ -27,8 +27,9 @@ class ActinCortex:
         self._cb = np.vectorize(I[3], otypes=[float])(self._x)
         self._v = np.zeros(np.size(Nx+1))
 
-        self.__total_monomers = sum(self._p) + sum(self._m)/len(self._x)
-        self.__total_cofilin = sum(self._cf) + sum(self._cb)/len(self._x)
+        self.__total_monomers = (sum(self._p) + sum(self._m))/len(self._x)
+        self.__total_cofilin = (sum(self._cf) + sum(self._cb))/len(self._x)
+        print(self.__total_cofilin, self.__total_monomers)
 
         alpha = params["alpha"]
         if alpha_type == "constant":
@@ -151,8 +152,9 @@ class ActinCortex:
         sum_cb = sum(cb)/len(x)
         sum_cf = sum(cf)/len(x)
 
-        monomer_deviation = 100 * (sum_m + sum_p) / self.__total_monomers
-        cofilin_deviation = 100 * (sum_cb + sum_cf) / self.__total_cofilin
+        monomer_deviation = 100 * (sum_m + sum_p - self.__total_monomers) / self.__total_monomers
+        cofilin_deviation = 100 * (sum_cb + sum_cf - self.__total_cofilin) / self.__total_cofilin
+        print(monomer_deviation, cofilin_deviation)
         
         self.monomers_error.append(monomer_deviation)
         self.cofilin_error.append(cofilin_deviation)
@@ -179,7 +181,7 @@ if __name__ == "__main__":
     I = [
         lambda p: 0.2 * (p < 0.5),
         lambda m: 0,
-        lambda cf: 0,
+        lambda cf: 0.1,
         lambda cb: 0 * (0 < cb < 0.5),
     ]
 
