@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+class DeviationTooHighError(Exception):
+    pass 
+
 class ActinCortex:
     def __init__(self, I, L, T, dx, dt, params, user_action=None, completion_run=False, alpha_type="constant", validation=True):
         Nt = int(round(T/dt))
@@ -24,6 +27,9 @@ class ActinCortex:
         self._cb = np.vectorize(I[3], otypes=[float])(self._x)
         self._v = np.zeros(np.size(Nx+1))
 
+        self.__total_monomers = sum(self._p) + sum(self._m)/len(self._x)
+        self.__total_cofilin = sum(self._cf) + sum(self._cb)/len(self._x)
+
         alpha = params["alpha"]
         if alpha_type == "constant":
             self._alpha = alpha
@@ -36,8 +42,8 @@ class ActinCortex:
             raise ValueError("Bad input for alpha argument")
         
         if validation:
-            self.monomers_sum = []
-            self.cofilin_sum = []
+            self.monomers_error = []
+            self.cofilin_error = []
 
 
     def get_f(self):
@@ -106,6 +112,11 @@ class ActinCortex:
         for n in t:
             if self.user_action:
                 self.user_action(p=p, m=m, cf=cf, cb=cb, v=v, dx=dx, dt=dt, x=x, t=t, n=n)
+            
+            if self.validation:
+                err1, err2 = self.mass_sum()
+                if abs(err1) > 5 or abs(err2) > 5:
+                    raise DeviationTooHighError
 
             self.iterate_values()
 
@@ -140,9 +151,13 @@ class ActinCortex:
         sum_cb = sum(cb)/len(x)
         sum_cf = sum(cf)/len(x)
 
-        self.monomers_sum.append(sum_m + sum_p)
-        self.cofilin_sum.append(sum_cb + sum_cf)
-        return 
+        monomer_deviation = 100 * (sum_m + sum_p) / self.__total_monomers
+        cofilin_deviation = 100 * (sum_cb + sum_cf) / self.__total_cofilin
+        
+        self.monomers_error.append(monomer_deviation)
+        self.cofilin_error.append(cofilin_deviation)
+
+        return monomer_deviation, cofilin_deviation 
 
 
 if __name__ == "__main__":
@@ -163,8 +178,8 @@ if __name__ == "__main__":
 
     I = [
         lambda p: 0.2 * (p < 0.5),
-        lambda m: 0.5,
-        lambda cf: 0.15,
+        lambda m: 0,
+        lambda cf: 0,
         lambda cb: 0 * (0 < cb < 0.5),
     ]
 
