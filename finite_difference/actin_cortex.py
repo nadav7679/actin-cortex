@@ -8,7 +8,7 @@ class DeviationTooHighError(Exception):
     pass 
 
 class ActinCortex:
-    def __init__(self, I, L, T, dx, dt, params, user_action=None, completion_run=False, alpha_type="constant", validation=True):
+    def __init__(self, I, L, T, dx, dt, params, user_action=None, completion_run=False, alpha_type="constant", validation=True, plot_interval=0.1):
         Nt = int(round(T/dt))
         Nx = int(round(L/dx))
         self.__dt = dt
@@ -20,6 +20,7 @@ class ActinCortex:
         self.user_action = user_action
         self.completion_run = completion_run
         self.validation = validation
+        self.plot_interval=plot_interval
 
         self._p = np.vectorize(I[0], otypes=[float])(self._x)
         self._m = np.vectorize(I[1], otypes=[float])(self._x)
@@ -29,7 +30,9 @@ class ActinCortex:
 
         self.__total_monomers = (sum(self._p) + sum(self._m))/len(self._x)
         self.__total_cofilin = (sum(self._cf) + sum(self._cb))/len(self._x)
-        print(self.__total_cofilin, self.__total_monomers)
+
+        self.fig, self.axes = plt.subplots(2, 1, figsize=(10, 8), layout='constrained')
+
 
         alpha = params["alpha"]
         if alpha_type == "constant":
@@ -114,11 +117,14 @@ class ActinCortex:
             if self.user_action:
                 self.user_action(p=p, m=m, cf=cf, cb=cb, v=v, dx=dx, dt=dt, x=x, t=t, n=n)
             
-            if self.validation:
+            if self.validation: # Raise an error when either the monomer or cofilin deveation rise above 5%
                 err1, err2 = self.mass_sum()
                 if abs(err1) > 5 or abs(err2) > 5:
                     raise DeviationTooHighError
-
+                
+            if n % self.plot_interval < 0.1*dt:
+                self.plot_live(n)
+                
             self.iterate_values()
 
         if self.completion_run:
@@ -154,12 +160,36 @@ class ActinCortex:
 
         monomer_deviation = 100 * (sum_m + sum_p - self.__total_monomers) / self.__total_monomers
         cofilin_deviation = 100 * (sum_cb + sum_cf - self.__total_cofilin) / self.__total_cofilin
-        print(monomer_deviation, cofilin_deviation)
         
         self.monomers_error.append(monomer_deviation)
         self.cofilin_error.append(cofilin_deviation)
 
         return monomer_deviation, cofilin_deviation 
+    
+
+    def plot_live(self, n):
+        p, m, cf, cb, t, x = self._p, self._m, self._cf, self._cb, self._t, self._x
+
+
+        self.axes[0].plot(x, m, '-r', label="Monomer")
+        self.axes[0].plot(x, p, 'black', label="Polymer")
+        self.axes[0].plot(x, cf, 'g', label="Cofilin free")
+        self.axes[0].plot(x, cb, 'b', label="Cofilin bound")
+
+        self.axes[0].set_title(f"t={n}")
+        self.axes[0].set_xlabel("x")
+        self.axes[0].set_ylim((-0.1, 1.2))
+        self.axes[0].grid()
+        self.axes[0].legend()
+
+        self.axes[1].plot(t[:len(self.monomers_error)], self.monomers_error)
+        self.axes[1].set_title("Total-monomers deviation %")
+        self.axes[1].grid()
+
+        plt.pause(0.00000001)
+        self.axes[0].clear()
+        self.axes[1].clear()
+
 
 
 if __name__ == "__main__":
@@ -179,13 +209,13 @@ if __name__ == "__main__":
     }
 
     I = [
-        lambda p: 0.2 * (p < 0.5),
+        lambda p: 0.2 * (p < 3),
         lambda m: 0,
-        lambda cf: 0.1,
+        lambda cf: 0.5,
         lambda cb: 0 * (0 < cb < 0.5),
     ]
 
-    T = 1
+    T = 5
     L = 10
     dx = 0.1
     dt = 1e-5
