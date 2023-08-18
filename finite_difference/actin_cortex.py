@@ -85,16 +85,14 @@ class ActinCortex:
         p_prev = np.roll(p, 1)
         cb_prev = np.roll(cb, 1)
 
-        f_p = -v * dt / (dx) * (p - p_prev) - depoly  # From some reason second ordergives an
+        f_p = -v * dt / (dx) * (p - p_prev) - depoly  # From some reason second order gives an
         f_m = depoly                                  # unstable solution. Also v has to be positive
         f_cf = depoly - bind                          # bc its backwards difference scheme
         f_cb = -v * dt / (dx) * (cb - cb_prev) - f_cf
 
         return f_p, f_m, f_cf, f_cb
 
-    def iterate_values(
-        self,
-    ):
+    def iterate_values(self):
         dt, dx, p, m, cf, cb = (
             self._dt,
             self._dx,
@@ -124,15 +122,12 @@ class ActinCortex:
         m_0 = m[1] - (dx / (Dm * (1 - beta * p[0]))) * p[1] * v
 
         # Calculate inner-points
-        m_flux = (
-            Dm
-            * dt
-            / (2 * dx**2)
+        m_flux = Dm * dt / (2 * dx**2) \
             * (
                 (2 - beta * (p[1:-1] + p[2:])) * (m[2:] - m[1:-1])
                 - (2 - beta * (p[1:-1] + p[:-2])) * (m[1:-1] - m[:-2])
             )
-        )
+        
         cf_flux = Dc * dt / (dx**2) * (cf[2:] + cf[:-2] - 2 * cf[1:-1])
 
         # Set boundaries
