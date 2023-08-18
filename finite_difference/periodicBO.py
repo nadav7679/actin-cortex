@@ -26,15 +26,13 @@ class ActinCortexPeriodicBO(ActinCortex):
         depoly = (dt * alpha) * cb * p
         bind = (dt * k_s) * cf * p
 
-        # p_prev = np.roll(p, -1)
-        p_next = np.roll(p, 1)
-        # cb_prev = np.roll(cb, -1)
-        cb_next = np.roll(cb, 1)
+        p_prev = np.roll(p, 1)
+        cb_prev = np.roll(cb, 1)
 
-        f_p = -v * dt / (dx) * (p_next - p) - depoly  # From some reason second ordergives an
+        f_p = -v * dt / (dx) * (p - p_prev) - depoly  # From some reason second ordergives an
         f_m = depoly                                  # unstavle solution. Also v has to be positive
-        f_cf = depoly - bind
-        f_cb = -v * dt / (dx) * (cb_next - cb) - f_cf
+        f_cf = depoly - bind                          # bc its backwards difference scheme
+        f_cb = -v * dt / (dx) * (cb - cb_prev) - f_cf
 
         return f_p, f_m, f_cf, f_cb
 
@@ -59,20 +57,19 @@ class ActinCortexPeriodicBO(ActinCortex):
             self._params["beta"],
             self._params["m_c"],
         )
-        self._v = -1
+        self._v = 1
         v = self._v
         f = self.get_f()
 
-        m_next = np.roll(m, 2)
-        m_back = np.roll(m, -2)
-        p_next = np.roll(p, 2)
-        p_back = np.roll(p, -2)
-        cf_next = np.roll(cf, 2)
-        cf_back = np.roll(cf, -2)
+        m_next = np.roll(m, -2)
+        m_back = np.roll(m, 2)
+        p_next = np.roll(p, -2)
+        p_back = np.roll(p, 2)
+        cf_next = np.roll(cf, -2)
+        cf_back = np.roll(cf, 2)
 
         m_flux = Dm*dt/(2*dx**2) * \
                     ((2-beta*(p + p_next))*(m_next - m) - (2-beta*(p + p_back))*(m - m_back))
-
         cf_flux = Dc * dt / (dx**2) * (cf_back + cf_next - 2 * cf)
 
         # Assign new values
