@@ -65,10 +65,14 @@ class ActinCortexPeriodicBO(ActinCortex):
 
         m_next = np.roll(m, 2)
         m_back = np.roll(m, -2)
-        m_flux = Dm * dt / (dx**2) * (m_next + m_back - 2 * m)
-
+        p_next = np.roll(p, 2)
+        p_back = np.roll(p, -2)
         cf_next = np.roll(cf, 2)
         cf_back = np.roll(cf, -2)
+
+        m_flux = Dm*dt/(2*dx**2) * \
+                    ((2-beta*(p + p_next))*(m_next - m) - (2-beta*(p + p_back))*(m - m_back))
+
         cf_flux = Dc * dt / (dx**2) * (cf_back + cf_next - 2 * cf)
 
         # Assign new values
@@ -92,7 +96,7 @@ if __name__ == "__main__":
     params = {
         "Dm": 8.4,
         "Dc": 10,
-        "beta": 0.2,
+        "beta": 0.8,
         "k_s": 2,
         "k_gr": 8.7,
         "k_br": 2.16e-5,
@@ -104,16 +108,16 @@ if __name__ == "__main__":
     }
 
     I = [
-        lambda p: 0.6 * (1 < p < 3),
-        lambda m: 0,
-        lambda cf: 0.5,
+        lambda p: 0.5 * (1 < p < 3),
+        lambda m: 0.2,
+        lambda cf: 0.1,
         lambda cb: 0 * (0 < cb < 0.5),
     ]
 
-    T = 5
+    T = 20
     L = 10
     dx = 0.1
-    dt = 1e-5
+    dt = 1e-4
 
     simulation = ActinCortexPeriodicBO(I, L, T, dx, dt, params)
     sol = simulation.solver()
