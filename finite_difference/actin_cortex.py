@@ -85,11 +85,9 @@ class ActinCortex:
         p_prev = np.roll(p, 1)
         cb_prev = np.roll(cb, 1)
 
-        f_p = (
-            -v * dt / (dx) * (p - p_prev) - depoly
-        )  # From some reason second ordergives an
-        f_m = depoly  # unstable solution. Also v has to be positive
-        f_cf = depoly - bind  # bc its backwards difference scheme
+        f_p = -v * dt / (dx) * (p - p_prev) - depoly  # From some reason second ordergives an
+        f_m = depoly                                  # unstable solution. Also v has to be positive
+        f_cf = depoly - bind                          # bc its backwards difference scheme
         f_cb = -v * dt / (dx) * (cb - cb_prev) - f_cf
 
         return f_p, f_m, f_cf, f_cb
