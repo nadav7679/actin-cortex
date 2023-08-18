@@ -4,38 +4,6 @@ from actin_cortex import ActinCortex
 
 
 class ActinCortexPeriodicBO(ActinCortex):
-    def get_f(self):
-        """Calculates the f part of the discretizied equations
-
-        Returns:
-            tuple: f_p[-1:1], f_m[-1:1], f_cf[-1:1], f_cb[-1:1]
-        """
-        dt, dx, p, cf, cb, v = (
-            self._dt,
-            self._dx,
-            self._p,
-            self._cf,
-            self._cb,
-            self._v,
-        )
-        k_s = self._params["k_s"]
-        alpha = (
-            self._alpha if isinstance(self._alpha, (int, float)) else self._alpha[1:-1]
-        )
-
-        depoly = (dt * alpha) * cb * p
-        bind = (dt * k_s) * cf * p
-
-        p_prev = np.roll(p, 1)
-        cb_prev = np.roll(cb, 1)
-
-        f_p = -v * dt / (dx) * (p - p_prev) - depoly  # From some reason second ordergives an
-        f_m = depoly                                  # unstavle solution. Also v has to be positive
-        f_cf = depoly - bind                          # bc its backwards difference scheme
-        f_cb = -v * dt / (dx) * (cb - cb_prev) - f_cf
-
-        return f_p, f_m, f_cf, f_cb
-
     def iterate_values(self):
         dt, dx, p, m, cf, cb, v = (
             self._dt,

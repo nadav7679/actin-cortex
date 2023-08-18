@@ -65,7 +65,6 @@ class ActinCortex:
     def get_f(self):
         """Calculates the f part of the discretizied equations
 
-
         Returns:
             tuple: f_p[-1:1], f_m[-1:1], f_cf[-1:1], f_cb[-1:1]
         """
@@ -78,17 +77,20 @@ class ActinCortex:
             self._v,
         )
         k_s = self._params["k_s"]
-        alpha = (
-            self._alpha if isinstance(self._alpha, (int, float)) else self._alpha[1:-1]
-        )
+        alpha = self._alpha if isinstance(self._alpha, (int, float)) else self._alpha
 
-        depoly = dt * alpha * cb[1:-1] * p[1:-1]
-        bind = dt * k_s * cf[1:-1] * p[1:-1]
+        depoly = (dt * alpha) * cb * p
+        bind = (dt * k_s) * cf * p
 
-        f_p = -v * dt / (dx) * (p[1:-1] - p[:-2]) - depoly
-        f_m = depoly
-        f_cf = depoly - bind
-        f_cb = -v * dt / dx * (cb[1:-1] - cb[:-2]) - f_cf
+        p_prev = np.roll(p, 1)
+        cb_prev = np.roll(cb, 1)
+
+        f_p = (
+            -v * dt / (dx) * (p - p_prev) - depoly
+        )  # From some reason second ordergives an
+        f_m = depoly  # unstable solution. Also v has to be positive
+        f_cf = depoly - bind  # bc its backwards difference scheme
+        f_cb = -v * dt / (dx) * (cb - cb_prev) - f_cf
 
         return f_p, f_m, f_cf, f_cb
 
@@ -124,19 +126,26 @@ class ActinCortex:
         m_0 = m[1] - (dx / (Dm * (1 - beta * p[0]))) * p[1] * v
 
         # Calculate inner-points
-        m_flux = Dm*dt/(2*dx**2) * \
-                    ((2-beta*(p[1: -1] + p[2:]))*(m[2:] - m[1: -1]) - (2-beta*(p[1: -1] + p[:-2]))*(m[1: -1] - m[:-2]))
-        cf_flux = Dc*dt/(dx**2) * (cf[2:] + cf[:-2] - 2*cf[1:-1])
-        
+        m_flux = (
+            Dm
+            * dt
+            / (2 * dx**2)
+            * (
+                (2 - beta * (p[1:-1] + p[2:])) * (m[2:] - m[1:-1])
+                - (2 - beta * (p[1:-1] + p[:-2])) * (m[1:-1] - m[:-2])
+            )
+        )
+        cf_flux = Dc * dt / (dx**2) * (cf[2:] + cf[:-2] - 2 * cf[1:-1])
+
         # Set boundaries
         p[-1], m[-1], cf[-1], cb[-1] = p_L, m_L, cf_L, cb_L
         p[0], m[0], cf[0], cb[0] = p_0, m_0, cf_0, cb_0
 
         # Assign new values
-        p[1:-1] = p[1:-1] + f[0]
-        m[1:-1] = m[1:-1] + m_flux + f[1]
-        cf[1:-1] = cf[1:-1] + cf_flux + f[2]
-        cb[1:-1] = cb[1:-1] + f[3]
+        p[1:-1] = p[1:-1] + f[0][1:-1]
+        m[1:-1] = m[1:-1] + m_flux + f[1][1:-1]
+        cf[1:-1] = cf[1:-1] + cf_flux + f[2][1:-1]
+        cb[1:-1] = cb[1:-1] + f[3][1:-1]
 
         return p, m, cf, cb, v
 
@@ -226,8 +235,7 @@ class ActinCortex:
         self.monomers_error.append(monomer_deviation)
         self.cofilin_error.append(cofilin_deviation)
 
-        return monomer_deviation, cofilin_deviation 
-        
+        return monomer_deviation, cofilin_deviation
 
     def plot_live(self, n):
         p, m, cf, cb, t, x = self._p, self._m, self._cf, self._cb, self._t, self._x
