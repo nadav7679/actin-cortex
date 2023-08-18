@@ -25,8 +25,8 @@ class ActinCortex:
     ):
         Nt = int(round(T / dt))
         Nx = int(round(L / dx))
-        self.__dt = dt
-        self.__dx = dx
+        self._dt = dt
+        self._dx = dx
         self._t = np.linspace(0, Nt * dt, Nt + 1)  # Mesh points in time
         self._x = np.linspace(0, L, Nx + 1)  # Mesh points in space
 
@@ -40,7 +40,7 @@ class ActinCortex:
         self._m = np.vectorize(I[1], otypes=[float])(self._x)
         self._cf = np.vectorize(I[2], otypes=[float])(self._x)
         self._cb = np.vectorize(I[3], otypes=[float])(self._x)
-        self._v = np.zeros(np.size(Nx + 1))
+        self._v = 0
 
         self.__total_monomers = (sum(self._p) + sum(self._m)) / len(self._x)
         self.__total_cofilin = (sum(self._cf) + sum(self._cb)) / len(self._x)
@@ -70,14 +70,14 @@ class ActinCortex:
             tuple: f_p[-1:1], f_m[-1:1], f_cf[-1:1], f_cb[-1:1]
         """
         dt, dx, p, cf, cb, v = (
-            self.__dt,
-            self.__dx,
+            self._dt,
+            self._dx,
             self._p,
             self._cf,
             self._cb,
             self._v,
         )
-        k_s = params["k_s"]
+        k_s = self._params["k_s"]
         alpha = (
             self._alpha if isinstance(self._alpha, (int, float)) else self._alpha[1:-1]
         )
@@ -95,14 +95,13 @@ class ActinCortex:
     def iterate_values(
         self,
     ):
-        dt, dx, p, m, cf, cb, v = (
-            self.__dt,
-            self.__dx,
+        dt, dx, p, m, cf, cb = (
+            self._dt,
+            self._dx,
             self._p,
             self._m,
             self._cf,
             self._cb,
-            self._v,
         )
         a_br, k_br, a_gr, k_gr, Dm, Dc, beta, m_c = (
             self._params["a_br"],
@@ -115,7 +114,8 @@ class ActinCortex:
             self._params["m_c"],
         )
 
-        v = a_br * k_br * (m[1] ** 2) + a_gr * k_gr * (m[1] - m_c)
+        self._v = a_br * k_br * (m[1] ** 2) + a_gr * k_gr * (m[1] - m_c)
+        v = self._v
         f = self.get_f()
 
         # Calculate boundaries
@@ -149,8 +149,8 @@ class ActinCortex:
                 _type_: _description_
         """
         dt, dx, p, m, cf, cb, v, t, x = (
-            self.__dt,
-            self.__dx,
+            self._dt,
+            self._dx,
             self._p,
             self._m,
             self._cf,
