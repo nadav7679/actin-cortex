@@ -31,6 +31,7 @@ class ActinCortex:
         self._x = np.linspace(0, L, Nx + 1)  # Mesh points in space
 
         self._params = params
+        self._I = I
         self.user_action = user_action
         self.completion_run = completion_run
         self.validation = validation
@@ -210,7 +211,7 @@ class ActinCortex:
                     all(np.abs(cb - cb_p) < tolerance),
                 ]
                 completed = all(checks)
-        self.final_plot()
+        self.final_plot(t[-1])
         return p, m, cf, cb, x, t
 
     def mass_sum(self):
@@ -255,7 +256,7 @@ class ActinCortex:
         self.axes[0].clear()
         self.axes[1].clear()
 
-    def final_plot(self):
+    def final_plot(self, T):
         fig, axes = plt.subplots(2, 2, figsize=(10, 6), layout='constrained')
         titles = [
             "Polymer",
@@ -277,7 +278,7 @@ class ActinCortex:
         }
 
         solution_label = f"t={T} (Final)" if self.completion_run else f"t={T}"
-        for ax, title, y, init in zip(axes.flat, titles, solutions.keys(), I):
+        for ax, title, y, init in zip(axes.flat, titles, solutions.keys(), self._I):
 
             initial_condition = np.vectorize(init, otypes=[float])(self._x)
             
@@ -315,18 +316,18 @@ if __name__ == "__main__":
         "a_gr": 1,
         "a_br": 0.4,
         "m_c": 0.2,
-        "alpha": 2,
+        "alpha": 1.5,
         "tolerance": 0.01,
     }
 
     I = [
         lambda p: 0.5 * (p < 0.2),
-        lambda m: 0.4,
+        lambda m: 0.5,
         lambda cf: 0.2,
         lambda cb: 0,
     ]
 
-    T = 2
+    T = 2.6
     L = 10
     dx = 0.1
     dt = 1e-4

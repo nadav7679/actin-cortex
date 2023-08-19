@@ -76,10 +76,10 @@ if __name__ == "__main__":
         lambda p: 0.5 * (1 < p < 3),
         lambda m: 0.2,
         lambda cf: 0.1,
-        lambda cb: 0 * (0 < cb < 0.5),
+        lambda cb: 0 ,
     ]
 
-    T = 6
+    T = 2
     L = 10
     dx = 0.1
     dt = 1e-4
