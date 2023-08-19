@@ -112,18 +112,20 @@ class ActinCortex:
             self._params["m_c"],
         )
 
-        self._v = a_br * k_br * (m[1] ** 2) + a_gr * k_gr * (m[1] - m_c)
+        self._v = a_br * k_br * (m[0] ** 2) + a_gr * k_gr * (m[0] - m_c)
         v = self._v
         f = self.get_f()
 
         # Calculate boundaries
-        p_L, m_L, cf_L, cb_L = 0, m[-2], cf[-2], cb[-2]
-        p_0, cf_0, cb_0 = p[1], cf[1], 0
-        m_0 = m[1] - (dx / (Dm * (1 - beta * p[0]))) * p[1] * v
+        p_L, m_L, cf_L, cb_L = 0, m[-3], cf[-3], 0
+        p_0, cf_0, cb_0 = p[1], cf[2], 0
+        m_minus_1 = m[1] - 2*dx/(Dm*(1-beta*p[0])) * p[0] * v
+        m_0 = m[0] + Dm*dt/(2*dx**2) * \
+                    ((2-beta*(p[0] + p[1]))*(m[1] - m[0]) - (2-2*beta*p[0])*(m[0] - m_minus_1))
 
         # Calculate inner-points
-        m_flux = Dm * dt / (2 * dx**2) \
-            * (
+        m_flux = Dm * dt / (2 * dx**2) * \
+            (
                 (2 - beta * (p[1:-1] + p[2:])) * (m[2:] - m[1:-1])
                 - (2 - beta * (p[1:-1] + p[:-2])) * (m[1:-1] - m[:-2])
             )
@@ -261,25 +263,25 @@ if __name__ == "__main__":
         "k_s": 2,
         "k_gr": 8.7,
         "k_br": 2.16e-5,
-        "a_gr": 2,
-        "a_br": 2,
-        "m_c": 0,
+        "a_gr": 1,
+        "a_br": 0.4,
+        "m_c": 0.2,
         "alpha": 2,
         "tolerance": 0.01,
     }
 
     I = [
-        lambda p: 0.2 * (p < 3),
-        lambda m: 0,
-        lambda cf: 0.5,
-        lambda cb: 0 * (0 < cb < 0.5),
+        lambda p: 0.5 * (p < 0.2),
+        lambda m: 0.4,
+        lambda cf: 0.2,
+        lambda cb: 0,
     ]
 
-    T = 5
+    T = 10
     L = 10
     dx = 0.1
-    dt = 1e-5
+    dt = 1e-4
 
-    simulation = ActinCortex(I, L, T, dx, dt, params)
+    simulation = ActinCortex(I, L, T, dx, dt, params, validation=True)
     sol = simulation.solver()
     print(sol)
