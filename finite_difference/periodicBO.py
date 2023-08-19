@@ -61,13 +61,13 @@ if __name__ == "__main__":
     params = {
         "Dm": 8.4,
         "Dc": 10,
-        "beta": 0.8,
-        "k_s": 2,
+        "beta": 0.2,
+        "k_s": 0.8,
         "k_gr": 8.7,
         "k_br": 2.16e-5,
-        "a_gr": 2,
-        "a_br": 2,
-        "m_c": 0,
+        "a_gr": 1,
+        "a_br": 0.4,
+        "m_c": 0.2,
         "alpha": 2,
         "tolerance": 0.01,
     }
@@ -79,10 +79,10 @@ if __name__ == "__main__":
         lambda cb: 0 * (0 < cb < 0.5),
     ]
 
-    T = 20
+    T = 6
     L = 10
     dx = 0.1
     dt = 1e-4
 
     simulation = ActinCortexPeriodicBO(I, L, T, dx, dt, params)
-    sol = simulation.solver()
+    sol = simulation.solver(live_plot=False)
