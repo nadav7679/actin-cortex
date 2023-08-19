@@ -144,7 +144,7 @@ class ActinCortex:
 
         return p, m, cf, cb, v
 
-    def solver(self):
+    def solver(self, live_plot=True):
         """_summary_
         get_f - A function that returns a list of 4 values according to ${\bf f}$. The spatial derivatives would be calculated based on regular finite difference, e.g. $\frac{r_p^{n, m+1} - r_p^{n, m}}{\Delta x}$
             Args:
@@ -165,6 +165,8 @@ class ActinCortex:
         )
 
         for n in t:
+            err1, err2 = self.mass_sum()
+
             if self.user_action:
                 self.user_action(
                     p=p, m=m, cf=cf, cb=cb, v=v, dx=dx, dt=dt, x=x, t=t, n=n
@@ -173,12 +175,11 @@ class ActinCortex:
             if (
                 self.validation
             ):  # Raise an error when either the monomer or cofilin deveation rise above 5%
-                err1, err2 = self.mass_sum()
                 if abs(err1) > 5 or abs(err2) > 5:
                     raise DeviationTooHighError
 
-            if n % self.plot_interval < 0.1 * dt:
-                self.plot_live(n)
+            if live_plot and n % self.plot_interval < 0.1 * dt:
+                self.live_plot(n)
 
             self.iterate_values()
 
@@ -209,7 +210,7 @@ class ActinCortex:
                     all(np.abs(cb - cb_p) < tolerance),
                 ]
                 completed = all(checks)
-
+        self.final_plot()
         return p, m, cf, cb, x, t
 
     def mass_sum(self):
@@ -232,7 +233,7 @@ class ActinCortex:
 
         return monomer_deviation, cofilin_deviation
 
-    def plot_live(self, n):
+    def live_plot(self, n):
         p, m, cf, cb, t, x = self._p, self._m, self._cf, self._cb, self._t, self._x
 
         self.axes[0].plot(x, m, "-r", label="Monomer")
@@ -253,6 +254,54 @@ class ActinCortex:
         plt.pause(0.00000001)
         self.axes[0].clear()
         self.axes[1].clear()
+
+    def final_plot(self):
+        fig, axes = plt.subplots(2, 2, figsize=(10, 6), layout='constrained')
+        titles = [
+            "Polymer",
+            "Monomer",
+            "Cofilin free",
+            "Cofilin bound",
+        ]
+        solutions = {
+            "p": self._p,
+            "m": self._m,
+            "cf": self._cf,
+            "cb": self._cb,
+        }
+        styles = {
+            "p": "black",
+            "m": "red",
+            "cf": "green",
+            "cb": "blue",
+        }
+
+        solution_label = f"t={T} (Final)" if self.completion_run else f"t={T}"
+        for ax, title, y, init in zip(axes.flat, titles, solutions.keys(), I):
+
+            initial_condition = np.vectorize(init, otypes=[float])(self._x)
+            
+            ax.set_title(title)
+            ax.plot(self._x, initial_condition, styles[y], ls="--", label="Initial Condition")
+            ax.plot(self._x, solutions[y], styles[y], label=solution_label)
+            ax.legend()
+
+        fig2, axes2 = plt.subplots(2, 1, figsize=(10, 6), layout='constrained')
+
+        axes2[0].plot(self._t, self.monomers_error)
+        axes2[0].set_title("Total-monomers deviation %")
+        
+        axes2[1].plot(self._t, self.cofilin_error)
+        axes2[1].set_title("Total-cofilin deviation %")
+        axes2[1].set_xlabel("t")
+
+
+        plt.show()
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -277,11 +326,11 @@ if __name__ == "__main__":
         lambda cb: 0,
     ]
 
-    T = 10
+    T = 2
     L = 10
     dx = 0.1
     dt = 1e-4
 
     simulation = ActinCortex(I, L, T, dx, dt, params, validation=True)
-    sol = simulation.solver()
-    print(sol)
+    sol = simulation.solver(live_plot=False)
+    # print(sol)
