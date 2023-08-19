@@ -243,10 +243,10 @@ class ActinCortex:
         self.axes[0].set_ylim((-0.1, 1.2))
         self.axes[0].grid()
         self.axes[0].legend()
-
-        self.axes[1].plot(t[: len(self.monomers_error)], self.monomers_error)
-        self.axes[1].set_title("Total-monomers deviation %")
-        self.axes[1].grid()
+        if self.validation:
+            self.axes[1].plot(t[: len(self.monomers_error)], self.monomers_error)
+            self.axes[1].set_title("Total-monomers deviation %")
+            self.axes[1].grid()
 
         plt.pause(0.00000001)
         self.axes[0].clear()
